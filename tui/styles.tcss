@@ -1,0 +1,147 @@
+/* Main Containers */
+#main_title, #setup_title {
+    text-align: center;
+    background: $primary;
+    color: $text;
+    padding: 1;
+    margin: 1;
+    text-style: bold;
+}
+
+#menu_container, #setup_body {
+    align: center middle;
+    margin: 2;
+}
+
+Button {
+    margin: 1;
+    width: 30;
+}
+
+.config_row {
+    height: 4;
+    align: center middle;
+}
+
+.label {
+    width: 12;
+    padding-top: 1;
+}
+
+.seat_row {
+    height: 3;
+    align: center middle;
+}
+
+.seat_label {
+    width: 15;
+}
+
+/* Game Screen Layout */
+#game_top_bar {
+    height: 3;
+    background: $accent;
+    padding: 0 1;
+    dock: top;
+}
+
+#game_status {
+    width: 1fr;
+    padding: 1;
+}
+
+#game_main {
+    layout: grid;
+    grid-size: 3 1;
+    grid-columns: 2fr 1fr 1fr;
+}
+
+#play_area {
+    padding: 1;
+    border: solid $primary;
+}
+
+#side_panel {
+    padding: 1;
+    border-left: solid $primary;
+    background: $surface;
+}
+
+#log_panel {
+    padding: 1;
+    border-left: solid $primary;
+}
+
+#game_log {
+    height: 1fr;
+    border: inner $primary;
+    background: $panel;
+}
+
+.header {
+    background: $primary;
+    text-align: center;
+    text-style: bold;
+    margin: 1 0;
+}
+
+#table_area, #hand_area {
+    height: 10;
+    margin-bottom: 1;
+    align: center middle;
+    text-align: center;
+}
+
+#game_controls {
+    height: 5;
+    align: center middle;
+    dock: bottom;
+}
+
+/* Modal - Flip Screen */
+FlipScreen {
+    align: center middle;
+}
+
+#flip_container {
+    width: 90%;
+    height: 90%;
+    border: double $accent;
+    background: $surface;
+    padding: 1;
+}
+
+.flip_option {
+    height: 1fr;
+    border: solid $primary;
+    margin: 1;
+    padding: 1;
+    content-align: center middle;
+    align: center middle;
+}
+
+.flip_option:hover {
+    border: double $accent;
+    background: $boost;
+}
+
+.flip_option Static {
+    text-align: center;
+}
+
+/* Info Rendering */
+.score_row {
+    height: 1;
+    margin-bottom: 0;
+}
+
+.active_player {
+    color: $accent;
+    text-style: bold italic;
+}
+
+#interaction_hint {
+    color: $text-muted;
+    text-align: center;
+    margin-top: 1;
+}

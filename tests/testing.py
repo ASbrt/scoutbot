@@ -1,10 +1,10 @@
 import random
 from pprint import pprint
 
-from simulation_core import build_deck, deal_hands
-from GameState import GameState, Show
-from helpers import *
-from legal_moves import *
+from engine.state.simulation_core import Card, build_deck, deal_hands
+from engine.state.GameState import GameState, Show
+from engine.logic.helpers import *
+from engine.logic.legal_moves import *
 
 
 """

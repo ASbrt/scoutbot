@@ -1,5 +1,5 @@
-from simulation_core import Card
-from GameState import ShowCandidate, GameState
+from engine.state.simulation_core import Card
+from engine.state.GameState import ShowCandidate, GameState
 
 def get_active_values(hand: list[Card]) -> list[int]:
     """

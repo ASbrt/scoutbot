@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 # Dataclass takes care of a bunch of boilerplate code for defining a class that mainly holds state
 # frozen=True so that the object becomes immutable
@@ -72,3 +72,7 @@ def deal_hands(deck: list[Card], n_players: int):
         hands.append(hand)
 
     return hands
+
+
+def copy_card(card: Card) -> Card:
+    return replace(card)

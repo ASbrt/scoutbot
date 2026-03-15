@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
-from GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
-from helpers import get_active_values
+from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
+from engine.logic.helpers import get_active_values
 
 @dataclass
 class TurnRecord:

@@ -1,0 +1,29 @@
+from textual.app import ComposeResult
+from textual.screen import Screen
+from textual.widgets import Header, Footer, Static, Button
+from textual.containers import Vertical
+
+class HomeScreen(Screen):
+    """The entry point of the application."""
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("SCOUT BOT", id="main_title")
+        with Vertical(id="menu_container"):
+            yield Button("Play Game", id="nav_play", variant="primary")
+            yield Button("Training Data (WIP)", id="nav_data", disabled=True)
+            yield Button("Tournaments (WIP)", id="nav_tourney", disabled=True)
+            yield Button("Quit", id="nav_quit", variant="error")
+        yield Footer()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "nav_play":
+            from .setup import SetupScreen
+            self.app.push_screen(SetupScreen())
+        elif event.button.id == "nav_quit":
+            self.app.exit()
+        elif event.button.id == "nav_data":
+            # For future expansion
+            self.notify("Training Data view is not yet implemented.")
+        elif event.button.id == "nav_tourney":
+            # For future expansion
+            self.notify("Tournaments view is not yet implemented.")

@@ -1,6 +1,6 @@
 import random
-from simulation_core import Card
-from GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
+from engine.state.simulation_core import Card
+from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
 
 class RandomBot:
     def choose_flip(self, hand: list[Card], player_index: int, rng: random.Random) -> bool:

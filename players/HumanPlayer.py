@@ -1,8 +1,8 @@
-from simulation_core import Card
-from GameState import *
+from engine.state.simulation_core import Card
+from engine.state.GameState import *
 import random
-from helpers import determine_show_candidates
-from legal_moves import apply_scout_move, get_legal_show_candidates
+from engine.logic.helpers import determine_show_candidates
+from engine.logic.legal_moves import apply_scout_move, get_legal_show_candidates
 
 def display_hand(hand: list[Card]) -> None:
     print(f'Active Values: {[card.active for card in hand]} \n')
@@ -190,11 +190,3 @@ class HumanBot:
             return self._choose_scout_and_show(state, moves)
 
         return chosen_move
-
-
-
-
-
-
-
-

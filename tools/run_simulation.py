@@ -1,7 +1,7 @@
 import random
-from testing import test_move_generation, test_scout_move, test_scout_and_show
-from Bots import RandomBot
-from GameLoop import play_game
+from tests.testing import test_move_generation, test_scout_move, test_scout_and_show
+from players.Bots import RandomBot
+from engine.logic.GameLoop import play_game
 import time
 
 def testing():

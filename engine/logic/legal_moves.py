@@ -1,5 +1,5 @@
-from GameState import *
-from helpers import determine_show_candidates, compute_show_rank
+from engine.state.GameState import *
+from engine.logic.helpers import determine_show_candidates, compute_show_rank
 
 def get_legal_show_candidates(state: GameState) -> list[ShowCandidate]:
     """
