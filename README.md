@@ -1,7 +1,7 @@
 # Scoutbot
 Welcome to my project for ICSS! This project implements a game engine for the card game **Scout**. This is meant to work as a basis to explore Monte Carlo Tree Searches as well as learn about general ML techniques.
 
-**IMPORTANT:** This is a work in progress! The current implementation needs a bigger refactor to make TUI work for player input. Which means refactoring the current GameLoop.py into a more modular Controller based system able to handle both event driven and simulation based game loops.
+**IMPORTANT:** This is a work in progress! The current implementation needed a bigger refactor from an initial GameLoop design to Controllers to make the TUI work for player input. These classes are implemented now, but not wired in with the TUI yet
 
 ## What is Scout?
 Scout is a card game where you can't reorder your hand. You have to play sets or runs to beat what's on the table (**Show**), or take a card from the table to improve your hand (**Scout**). Once per round you are allowed to do both in one move. All cards have 2 values on them where only one is active at a time. The basic rules are simple, the strategy is deeper than it seems. 
@@ -38,7 +38,7 @@ To start the new TUI experience, run this from the root folder:
 ```bash
 python3 -m tui.app
 ```
-*(Note: You'll need the `textual` library installed, which is in the project's `.venv`.)*
+*(Note: You'll need the `textual` library installed)
 
 ### How to run simulations
 The simulation runner still works for quick bot-only testing:
