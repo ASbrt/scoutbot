@@ -4,6 +4,8 @@ from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAn
 from engine.logic.helpers import get_active_values
 
 # TODO: Clean up obsolete CLI prints
+# TODO: Check/implement Data persistence
+# TODO: Visualization??
 
 @dataclass
 class TurnRecord:
