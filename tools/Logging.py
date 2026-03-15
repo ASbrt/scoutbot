@@ -3,6 +3,8 @@ from typing import Optional
 from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
 from engine.logic.helpers import get_active_values
 
+# TODO: Clean up obsolete CLI prints
+
 @dataclass
 class TurnRecord:
     round_num: int

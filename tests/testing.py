@@ -1,7 +1,7 @@
 import random
 from pprint import pprint
 
-from engine.state.simulation_core import Card, build_deck, deal_hands
+from engine.state.CardCore import Card, build_deck, deal_hands
 from engine.state.GameState import GameState, Show
 from engine.logic.helpers import *
 from engine.logic.legal_moves import *

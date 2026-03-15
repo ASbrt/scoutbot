@@ -4,6 +4,8 @@ from players.Bots import RandomBot
 from engine.logic.GameLoop import play_game
 import time
 
+# TODO: Retire GameLoop, transition to GameController
+
 def testing():
     test_move_generation(seed=5, n_players=3)
     test_scout_move(seed=5,n_players=3)

@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, Button
 from textual.containers import Vertical, Horizontal
 
-from engine.state.simulation_core import Card
+from engine.state.CardCore import Card
 from ...render_cards import render_card_row
 
 class FlipScreen(ModalScreen):

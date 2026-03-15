@@ -1,4 +1,4 @@
-from engine.state.simulation_core import Card
+from engine.state.CardCore import Card
 from engine.state.GameState import *
 import random
 from engine.logic.helpers import determine_show_candidates

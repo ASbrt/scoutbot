@@ -1,6 +1,8 @@
 import random
-from engine.state.simulation_core import Card
+from engine.state.CardCore import Card
 from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
+
+# TODO: Make Bot Interface? -> Different bot types could simply inherit the interface
 
 class RandomBot:
     def choose_flip(self, hand: list[Card], player_index: int, rng: random.Random) -> bool:

@@ -1,4 +1,4 @@
-from engine.state.simulation_core import Card
+from engine.state.CardCore import Card
 
 def card_values_active_inactive(card: Card) -> tuple[int, int]:
     # Adjust if your Card uses different names

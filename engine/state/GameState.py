@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from engine.state.simulation_core import Card
+from engine.state.CardCore import Card
 from typing import Optional
 
 @dataclass(frozen=True)
