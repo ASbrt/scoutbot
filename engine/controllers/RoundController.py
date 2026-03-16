@@ -27,15 +27,8 @@ class RoundController:
     - does NOT know anything about cursor positions, selected indices, etc.
     """
 
-    def __init__(self,
-        bots: list,
-        rng: random.Random,
-        n_players: int,
-        round_num: int,
-        scores_in: List[int],
-        start_player: Optional[int] = None,
-        log_turns: bool = True,
-    ):
+    def __init__(self, bots: list, rng: random.Random, n_players: int, round_num: int, scores_in: List[int],
+                 start_player: Optional[int] = None, log_turns: bool = True):
         if len(bots) != n_players:
             raise ValueError(f"Need {n_players} players, got {len(bots)} in bot list")
 
