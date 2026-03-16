@@ -2,6 +2,7 @@ import random
 from typing import Optional, List
 from engine.controllers.RoundController import RoundController
 from tools.Logging import GameResult, RoundResult
+from tools.serialization import serialize_seat_types
 
 
 class GameController:
@@ -16,7 +17,8 @@ class GameController:
     - build final GameResult
     """
 
-    def __init__(self, bots: list, rng: random.Random, n_players: int, log_turns: bool = True):
+    def __init__(self, game_id: int, seed: int, bots: list, rng: random.Random, n_players: int,
+                 log_turns: bool = True):
         if len(bots) != n_players:
             raise ValueError(f"Need {n_players} players, got {len(bots)} in bot list")
 
@@ -24,6 +26,8 @@ class GameController:
         self.rng = rng
         self.n_players = n_players
         self.log_turns = log_turns
+        self.game_id = game_id
+        self.seed = seed
 
         self.scores: List[int] = [0] * n_players
         self.round_results: List[RoundResult] = []
@@ -86,7 +90,10 @@ class GameController:
             raise RuntimeError("Game is not finished yet")
 
         return GameResult(
+            game_id=self.game_id,
+            seed=self.seed,
             n_players=self.n_players,
+            seat_types=serialize_seat_types(self.bots),
             n_rounds=len(self.round_results),
             scores_final=list(self.scores),
             rounds=list(self.round_results),

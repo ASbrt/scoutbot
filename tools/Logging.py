@@ -2,6 +2,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 @dataclass
+class FlipRecord:
+    player: int
+    player_type: str
+    hand_before: list[dict]
+    flipped: bool
+
+
+@dataclass
 class TurnRecord:
     turn_index: int
     player: int
@@ -22,6 +30,7 @@ class RoundResult:
     end_reason: str
     scores_in: list[int]
     scores_out: list[int]
+    flip_log: list[FlipRecord]
     turn_log: list[TurnRecord]
 
 

@@ -5,7 +5,9 @@ from engine.state.CardCore import build_deck, deal_hands, Card
 from engine.state.GameState import GameState, Move
 from engine.logic.legal_moves import get_all_legal_moves, apply_move
 from engine.logic.helpers import flip_entire_hand, any_empty_hand, unbeaten_show_cycle,apply_end_of_round_penalties
-from tools.Logging import TurnRecord, RoundResult
+from tools.Logging import FlipRecord, TurnRecord, RoundResult
+from tools.serialization import serialize_card, serialize_game_state, serialize_move, serialize_player_type
+
 
 
 class RoundStage(Enum):
@@ -52,6 +54,7 @@ class RoundController:
         self.state: Optional[GameState] = None
         self.legal_moves: List[Move] = []
         self.turn_index: int = 0
+        self.flip_log: list[FlipRecord] = []
         self.turn_log: List[TurnRecord] = []
         self.ended_by_unbeaten_cycle: bool = False
 
@@ -81,6 +84,7 @@ class RoundController:
 
         self.flip_player_index = 0
         self.turn_index = 0
+        self.flip_log = []
         self.turn_log = []
         self.ended_by_unbeaten_cycle = False
         self.state = None
@@ -139,6 +143,17 @@ class RoundController:
             raise RuntimeError("Flip phase has no pending hands")
 
         player = self.flip_player_index
+        hand_before_snapshot = [serialize_card(card) for card in self.pending_hands[player]]
+        player_type = serialize_player_type(self.bots[player])
+
+        self.flip_log.append(
+            FlipRecord(
+                player=player,
+                player_type=player_type,
+                hand_before=hand_before_snapshot,
+                flipped=flipped,
+            )
+        )
 
         if flipped:
             self.pending_hands[player] = flip_entire_hand(self.pending_hands[player])
@@ -235,14 +250,18 @@ class RoundController:
         Apply one complete move in TURNS stage. Used for both human-submitted moves and bot-selected moves.
         """
         if self.stage != RoundStage.TURNS:
-            raise RuntimeError("apply_selected_move only valid in TURNS stage")
+            raise RuntimeError("apply_selected_move is only valid in TURNS stage")
         if self.state is None:
-            raise RuntimeError("TURNS stage without GameState")
+            raise RuntimeError("TURNS stage is without GameState")
 
         state_before = self.state
         player = state_before.current_player
 
         if self.log_turns:
+            state_before_snapshot = serialize_game_state(state_before)
+            move_snapshot = serialize_move(move)
+            player_type = serialize_player_type(self.bots[player])
+
             scores_before = list(state_before.scores)
             hand_sizes_before = [len(h) for h in state_before.hands]
             table_rank_before = state_before.table.rank if state_before.table else None
@@ -252,10 +271,11 @@ class RoundController:
         if self.log_turns:
             self.turn_log.append(
                 TurnRecord(
-                    round_num=self.round_num,
                     turn_index=self.turn_index,
                     player=player,
-                    move=move,
+                    player_type=player_type,
+                    state_before=state_before_snapshot,
+                    move=move_snapshot,
                     scores_before=scores_before,
                     scores_after=list(state_after.scores),
                     hand_sizes_before=hand_sizes_before,
@@ -323,5 +343,6 @@ class RoundController:
             end_reason="unbeaten_show_cycle" if self.ended_by_unbeaten_cycle else "empty_hand",
             scores_in=list(self.scores_in),
             scores_out=list(scores_out),
+            flip_log=list(self.flip_log),
             turn_log=list(self.turn_log),
         )

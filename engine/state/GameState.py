@@ -2,6 +2,12 @@ from dataclasses import dataclass
 from engine.state.CardCore import Card
 from typing import Optional
 
+"""
+This file holds MoveCandidates and Moves that are needed for the files in logic to determine legal moves and apply them
+back to state. This file also holds the GameState object which serves as the source of truth for each round of a game. 
+All classes are frozen as to prevent mutations in place.
+"""
+
 @dataclass(frozen=True)
 class ShowCandidate:
     start: int

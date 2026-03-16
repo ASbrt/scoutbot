@@ -18,6 +18,9 @@ This file is sorted into sections, starting with testing for basic Show move, th
 """
 
 
+# TODO: Retire file. Obsolete (?)
+
+
 def print_hands(hands: list[list[Card]], title: str = "Hands") -> None:
     print(f"\n=== {title} ===")
     for i, hand in enumerate(hands):
