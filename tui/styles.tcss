@@ -40,9 +40,15 @@ Button {
 /* Game Screen Layout */
 #game_top_bar {
     height: 3;
-    background: $accent;
+    background: $primary;
+    color: $text;
     padding: 0 1;
     dock: top;
+}
+
+#game_title {
+    padding: 1;
+    text-style: bold;
 }
 
 #game_status {
@@ -127,6 +133,20 @@ FlipScreen {
 
 .flip_option Static {
     text-align: center;
+}
+
+#summary_container {
+    width: 60;
+    max-width: 80%;
+    border: double $primary;
+    background: $surface;
+    padding: 1 2;
+    align: center middle;
+}
+
+#summary_body {
+    margin: 1 0;
+    text-align: left;
 }
 
 /* Info Rendering */

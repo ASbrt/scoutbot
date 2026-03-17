@@ -2,8 +2,8 @@ import random
 from enum import Enum, auto
 from typing import Optional, List
 from engine.state.CardCore import build_deck, deal_hands, Card
-from engine.state.GameState import GameState, Move
-from engine.logic.legal_moves import get_all_legal_moves, apply_move
+from engine.state.GameState import GameState, Move, ScoutCandidate
+from engine.logic.legal_moves import get_all_legal_moves, apply_move, apply_scout_move
 from engine.logic.helpers import flip_entire_hand, any_empty_hand, unbeaten_show_cycle,apply_end_of_round_penalties
 from tools.Logging import FlipRecord, TurnRecord, RoundResult
 from tools.serialization import serialize_card, serialize_game_state, serialize_move, serialize_player_type
@@ -320,6 +320,18 @@ class RoundController:
         """
         while self.stage == RoundStage.TURNS and self.current_actor_is_bot():
             self.run_bot_turn()
+
+    def preview_scout_candidate(self, candidate: ScoutCandidate) -> GameState:
+        """
+        Return a non-authoritative preview state for UI rendering during scout flows.
+
+        This does not mutate controller state; it only lets the TUI visualize the
+        temporary hand/table that would exist if this scout candidate were chosen.
+        """
+        if self.stage != RoundStage.TURNS or self.state is None:
+            raise RuntimeError("preview_scout_candidate only valid in TURNS stage")
+
+        return apply_scout_move(self.state, candidate, advance_turn=False)
 
     # Finalization/Round clean up
 
