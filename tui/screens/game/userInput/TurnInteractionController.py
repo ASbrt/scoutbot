@@ -46,8 +46,7 @@ class TurnInteractionController:
             # Only table-end cards are scoutable, so "left" snaps to the first end.
             self.screen.input_state.cursor_index = 0
         elif phase in (HumanTurnPhase.SHOW_SELECT, HumanTurnPhase.SCOUT_INSERT_POS):
-            hand_len = len(self._current_hand())
-            limit = hand_len + 1 if phase == HumanTurnPhase.SCOUT_INSERT_POS else hand_len
+            limit = self._cursor_limit_for_phase(phase)
             if limit:
                 self.screen.input_state.cursor_index = (self.screen.input_state.cursor_index - 1) % limit
         self.screen.renderer.refresh()
@@ -64,8 +63,7 @@ class TurnInteractionController:
                 # Symmetric with cursor_left: jump to the far scoutable table end.
                 self.screen.input_state.cursor_index = len(table_cards) - 1
         elif phase in (HumanTurnPhase.SHOW_SELECT, HumanTurnPhase.SCOUT_INSERT_POS):
-            hand_len = len(self._current_hand())
-            limit = hand_len + 1 if phase == HumanTurnPhase.SCOUT_INSERT_POS else hand_len
+            limit = self._cursor_limit_for_phase(phase)
             if limit:
                 self.screen.input_state.cursor_index = (self.screen.input_state.cursor_index + 1) % limit
         self.screen.renderer.refresh()
@@ -229,8 +227,7 @@ class TurnInteractionController:
             return
 
         matching_move = next(
-            # `next(..., None)` is a compact "find the exact legal move object"
-            # helper so we submit controller-approved moves only.
+            # `next(..., None)` is a helper so we submit controller-approved moves only.
             (move for move in self._scout_moves() if move.candidate == candidate),
             None,
         )
@@ -261,7 +258,7 @@ class TurnInteractionController:
         self.screen._submit_human_move(move)
 
     def preview_state(self):
-        """Return a non-authoritative preview state for render-time scout previews."""
+        """Return a preview state for render-time scout previews."""
         if not self._waiting_for_human_turn():
             return None
 
@@ -310,7 +307,7 @@ class TurnInteractionController:
         return self.screen.session is not None and self.screen.session.waiting_for_human_turn()
 
     def _legal_moves(self) -> list:
-        """Read the authoritative move list from the active round controller."""
+        """Read the move list from the active round controller."""
         round_controller = self.screen.session.round_controller if self.screen.session else None
         return round_controller.legal_moves if round_controller is not None else []
 
@@ -322,7 +319,7 @@ class TurnInteractionController:
         return round_controller.state.hands[round_controller.state.current_player]
 
     def _current_table_cards(self):
-        """Return the table cards from the authoritative controller state."""
+        """Returns the table cards from controller state"""
         round_controller = self.screen.session.round_controller if self.screen.session else None
         if round_controller is None or round_controller.state is None or round_controller.state.table is None:
             return []
@@ -339,3 +336,18 @@ class TurnInteractionController:
 
     def _has_show_move(self) -> bool:
         return bool(self._show_moves())
+
+    def _cursor_limit_for_phase(self, phase: HumanTurnPhase) -> int:
+        """Returns the number of cursor positions available in the given phase. Update for Scout&Show flow"""
+        if phase == HumanTurnPhase.SCOUT_INSERT_POS:
+            return len(self._current_hand()) + 1
+        if phase == HumanTurnPhase.SHOW_SELECT:
+            return len(self._display_hand())
+        return 0
+
+    def _display_hand(self):
+        """Returns the hand currently shown to the player, including scout previews. Update for Scout&Show flow"""
+        preview_state = self.preview_state()
+        if preview_state is not None:
+            return preview_state.hands[preview_state.current_player]
+        return self._current_hand()

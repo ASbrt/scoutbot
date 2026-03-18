@@ -45,13 +45,15 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-## 2. Start the TUI
+## 2. Start the TUI from project root directory
 
 ```bash
 python3 -m tui.app
 ```
 
 This starts the current Textual-based interface, where you can configure a game in the setup screen and then play against bots.
+
+You can quit the UI with Ctrl+Q.
 
 ---
 
