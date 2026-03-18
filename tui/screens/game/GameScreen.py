@@ -1,29 +1,27 @@
 import random
 from typing import Optional
-
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static
-
-from players.Bots import RandomBot
-
-from .flip_screen import FlipScreen
-from .game_presenter import GamePresenter
-from .game_session import GameSession, SessionEvent
-from .summary_modal import SummaryModal
-from .turn_input import TurnInputState
-from .turn_interaction import TurnInteractionController
-from .widgets import GameLog, PlayerSummary
+from bots.Bots import RandomBot
+from tools.data_export import ExportBundle, export_game_result
+from tui.screens.game.rendering.GameRenderer import GameRenderer
+from .utils import generate_game_id
+from .GameSessionAdapter import GameSession, SessionEvent
+from .modals.FlipScreen import FlipScreen
+from .modals.summary_builder import build_game_summary_modal, build_round_summary_modal
+from .userInput.TurnInteractionController import TurnInteractionController
+from .userInput.HumanInputUIState import TurnInputState
+from .logging.session_event_logger import log_session_events
+from .widgets import GameLog, StateOverview
 
 
 class GameScreen(Screen):
     """
-    Top-level coordinator for the ScoutBot gameplay screen.
-
-    This screen owns the Textual layout, the session lifecycle, and the flip modal.
-    Rendering is delegated to GamePresenter, and human move-building is delegated
+    Top-level coordinator for the ScoutBot gameplay screen. This screen owns the Textual layout, the session lifecycle
+    and the modals. Rendering is delegated to GamePresenter, and human move-building is delegated
     to TurnInteractionController.
     """
 
@@ -38,21 +36,26 @@ class GameScreen(Screen):
         Binding("a", "choose_sas", "Scout & Show", show=False),
     ]
 
+    # To stop key-presses like Enter to go back to lobby screen
     can_focus = True
 
     def __init__(self, config):
+        """Initialize all components used for one visible game screen."""
         super().__init__()
         self.config = config
         self.rng = random.Random(config.seed)
+        # A `None` seat is interpreted as a human player, bot instances occupy the remaining seats.
         self.bots = [RandomBot() if seat_type == "random" else None for seat_type in config.seat_types]
         self.session: Optional[GameSession] = None
-        self.turn_input = TurnInputState()
-        self.presenter = GamePresenter(self)
+        self.input_state = TurnInputState()
+        self.renderer = GameRenderer(self)
         self.turn_interaction = TurnInteractionController(self)
         self._flip_modal_open = False
         self._summary_modal_open = False
+        self._export_bundle: Optional[ExportBundle] = None
 
     def compose(self) -> ComposeResult:
+        """Build the static gameplay layout; live data is filled in later."""
         yield Header()
         with Horizontal(id="game_top_bar"):
             yield Static("ScoutBot - Game View", id="game_title")
@@ -77,7 +80,7 @@ class GameScreen(Screen):
 
             with Vertical(id="side_panel"):
                 yield Static("OVERVIEW", classes="header")
-                yield PlayerSummary(id="player_summary")
+                yield StateOverview(id="player_summary")
                 yield Static("Round info...", id="resource_info")
 
             with Vertical(id="log_panel"):
@@ -87,6 +90,7 @@ class GameScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Disable button focus and start the session after the first refresh."""
         for btn_id in ["#exit_game", "#btn_show", "#btn_scout", "#btn_scout_show"]:
             self.query_one(btn_id, Button).can_focus = False
 
@@ -95,6 +99,7 @@ class GameScreen(Screen):
 
     @property
     def logger(self) -> GameLog:
+        """Convenience accessor for the side-panel log widget."""
         return self.query_one("#game_log", GameLog)
 
     def start_game(self) -> None:
@@ -105,9 +110,9 @@ class GameScreen(Screen):
             bots=self.bots,
             rng=self.rng,
             n_players=self.config.n_players,
-            game_id=self.config.seed,
+            game_id=generate_game_id(),
         )
-        self._log_events(self.session.start())
+        self._handle_session_events(self.session.start())
         self._advance_session()
 
     def _advance_session(self) -> None:
@@ -115,13 +120,15 @@ class GameScreen(Screen):
         if self.session is None:
             return
 
-        self._log_events(self.session.advance_until_human_or_end())
-        self.presenter.refresh()
+        self._handle_session_events(self.session.advance_until_human_or_end())
+        self.renderer.refresh()
+        self._export_game_if_needed()
         if self._open_summary_modal_if_needed():
             return
         self._open_flip_modal_if_needed()
 
     def _open_flip_modal_if_needed(self) -> None:
+        """Open the flip modal exactly when the session is waiting on a human flip."""
         if self.session is None or self._flip_modal_open or self._summary_modal_open or not self.session.waiting_for_human_flip():
             return
 
@@ -131,12 +138,13 @@ class GameScreen(Screen):
         self.app.push_screen(FlipScreen(round_controller.get_flip_hand()), self.handle_flip_result)
 
     def handle_flip_result(self, flipped: bool) -> None:
+        """Receive the modal result, submit it, and resume session advancement."""
         self._flip_modal_open = False
         if self.session is None:
             return
 
-        self._log_events(self.session.submit_flip(flipped))
-        self.turn_input.reset()
+        self._handle_session_events(self.session.submit_flip(flipped))
+        self.input_state.reset()
         self._advance_session()
 
     def _open_summary_modal_if_needed(self) -> bool:
@@ -147,19 +155,35 @@ class GameScreen(Screen):
             return False
 
         if self.session.is_game_over():
+            final_result = self.session.final_result()
+            if final_result is None:
+                return False
             self._summary_modal_open = True
-            self.app.push_screen(self._build_game_end_modal(), self._handle_summary_modal_closed)
+            self.app.push_screen(
+                build_game_summary_modal(
+                    final_result,
+                    self.bots,
+                    self._export_bundle,
+                ),
+                self._handle_summary_modal_closed,
+            )
             return True
 
-        round_result = self.session.game_controller.round_results[-1] if self.session.game_controller.round_results else None
-        if round_result is not None and self.session.round_controller is None:
+        if self.session.has_pending_round_summary():
+            round_result = self.session.latest_round_result()
+            if round_result is None:
+                return False
             self._summary_modal_open = True
-            self.app.push_screen(self._build_round_end_modal(round_result), self._handle_summary_modal_closed)
+            self.app.push_screen(
+                build_round_summary_modal(round_result, self.bots),
+                self._handle_summary_modal_closed,
+            )
             return True
 
         return False
 
     def _handle_summary_modal_closed(self, _result=None) -> None:
+        """Resume play after round summaries or leave the screen after game end."""
         self._summary_modal_open = False
         if self.session is None:
             return
@@ -170,101 +194,40 @@ class GameScreen(Screen):
 
         self._advance_session()
 
-    def _build_round_end_modal(self, round_result) -> SummaryModal:
-        delta_lines = self._format_score_delta_lines(round_result.scores_in, round_result.scores_out)
-        score_lines = self._format_score_lines(round_result.scores_out)
-        reason = "No one could beat the show." if round_result.end_reason == "unbeaten_show_cycle" else "Someone emptied their hand."
-        body = (
-            f"Reason: {reason}\n\n"
-            f"Penalty / score delta:\n{delta_lines}\n\n"
-            f"Scores after round:\n{score_lines}"
-        )
-        return SummaryModal(
-            title=f"Round {round_result.round_num}/{self.config.n_players} Complete",
-            body=body,
-            button_label="Continue",
-        )
+    def _export_game_if_needed(self) -> None:
+        """Persist the finished game once, right after the final result exists."""
+        if self.session is None or not self.session.is_game_over() or self._export_bundle is not None:
+            return
 
-    def _build_game_end_modal(self) -> SummaryModal:
-        result = self.session.get_final_result()
-        score_lines = self._format_score_lines(result.scores_final)
-        highest_score = max(result.scores_final)
-        winners = [self._player_label(index) for index, score in enumerate(result.scores_final) if score == highest_score]
-        winner_text = ", ".join(winners)
-        body = (
-            f"Final scores:\n{score_lines}\n\n"
-            f"Winner{'s' if len(winners) > 1 else ''}: {winner_text}"
-        )
-        return SummaryModal(
-            title="Game Complete",
-            body=body,
-            button_label="Back to Lobby",
-        )
+        result = self.session.final_result()
+        if result is None:
+            return
 
-    def _format_score_delta_lines(self, scores_in: list[int], scores_out: list[int]) -> str:
-        lines = []
-        for index, (before, after) in enumerate(zip(scores_in, scores_out)):
-            delta = after - before
-            lines.append(f"{self._player_label(index)}: {before} -> {after} ({delta:+d})")
-        return "\n".join(lines)
-
-    def _format_score_lines(self, scores: list[int]) -> str:
-        return "\n".join(f"{self._player_label(index)}: {score}" for index, score in enumerate(scores))
-
-    def _player_label(self, index: int) -> str:
-        return "YOU" if self.bots[index] is None else f"P{index} (Bot)"
+        try:
+            # Export after `presenter.refresh()` so the user still sees the final
+            # state even if export ever throws an unexpected exception.
+            self._export_bundle = export_game_result(result)
+            self.logger.log_info(
+                f"Exported game data to {self._export_bundle.directory} "
+                f"({self._export_bundle.turns_file.name}, {self._export_bundle.flips_file.name})"
+            )
+        except Exception as exc:
+            self.logger.log_error(f"Automatic export failed: {exc}")
 
     def _submit_human_move(self, move) -> None:
         """Session submission stays on the screen so orchestration remains centralized."""
         if self.session is None:
             return
 
-        self._log_events(self.session.submit_move(move))
-        self.turn_input.reset()
+        self._handle_session_events(self.session.submit_move(move))
+        self.input_state.reset()
         self._advance_session()
 
-    def _log_events(self, events: list[SessionEvent]) -> None:
-        """Translate session events into user-facing log lines."""
-        for event in events:
-            if event.kind == "round_started":
-                self.turn_input.reset()
-                self.logger.log_round_start(
-                    event.data["round_num"],
-                    event.data["total_rounds"],
-                    event.data["n_players"],
-                )
-            elif event.kind == "flip_submitted":
-                player = event.data["player"]
-                flipped = event.data["flipped"]
-                if event.data["is_bot"]:
-                    action = "flipped" if flipped else "kept"
-                    self.logger.log_info(f"P{player} (Bot) {action} their hand.")
-                else:
-                    self.logger.log_info("You flipped your hand!" if flipped else "You kept your hand.")
-            elif event.kind == "move_submitted":
-                self.logger.log_move(
-                    event.data["player"],
-                    event.data["move"],
-                    is_bot=event.data["is_bot"],
-                    context=event.data.get("context"),
-                )
-            elif event.kind == "round_finished":
-                reason = (
-                    "No one could beat the show."
-                    if event.data["end_reason"] == "unbeaten_show_cycle"
-                    else "Someone emptied their hand."
-                )
-                self.logger.log_round_end(
-                    reason,
-                    event.data["scores_in"],
-                    event.data["scores_out"],
-                    round_num=event.data["round_num"],
-                    total_rounds=event.data["total_rounds"],
-                )
-            elif event.kind == "game_finished":
-                scores = ", ".join(f"P{i}: {score}" for i, score in enumerate(event.data["scores_final"]))
-                self.logger.log_phase("Game Over")
-                self.logger.log_info(f"Final scores -> {scores}")
+    def _handle_session_events(self, events: list[SessionEvent]) -> None:
+        """Apply the small screen-side reactions around one event batch."""
+        if any(event.kind == "round_started" for event in events):
+            self.input_state.reset()
+        log_session_events(self.logger, events)
 
     def action_choose_show(self) -> None:
         self.turn_interaction.choose_show()

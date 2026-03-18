@@ -1,2 +1,2 @@
-# Direct runtime dependency for the TUI.
 textual
+pandas

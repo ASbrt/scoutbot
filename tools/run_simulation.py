@@ -4,7 +4,7 @@ from players.Bots import RandomBot
 from engine.logic.GameLoop import play_game
 import time
 
-# TODO: Retire GameLoop, transition to GameController
+""" Leftover testing file - still runs since API did not change much, but not really used anymore"""
 
 def testing():
     test_move_generation(seed=5, n_players=3)
@@ -12,21 +12,16 @@ def testing():
     test_scout_and_show(seed=5, n_players=3)
 
 def main():
-    for i in range(2):
+    for i in range(3):
         rng = random.Random(i)
         n_players = 3
         bots = [RandomBot() for _ in range(n_players)]
 
-        result = play_game(bots=bots, rng=rng, n_players=n_players, log_turns=True, verbose=True)
+        result = play_game(bots=bots, rng=rng, n_players=n_players, log_turns=True, game_id=0, seed=4321)
 
         print("\n=== FINAL RESULT ===")
         print("Final scores:", result.scores_final)
         time.sleep(1)
-
-        # Optional: print first round trace
-        #print("\n=== ROUND 1 TRACE ===")
-        #for turn in result.rounds[0].turn_log:
-       #    print(turn)
 
 
 if __name__ == "__main__":

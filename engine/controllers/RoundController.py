@@ -13,7 +13,7 @@ from tools.serialization import serialize_card, serialize_game_state, serialize_
 class RoundStage(Enum):
     """
     An enum for state tracking. Helps with transitioning between different phases of a round. The previous GameLoop approach
-    was not suited for the more granular control needed for human interaction. This m
+    was not suited for the more granular control needed for human interaction.
     """
     CREATED = auto()
     FLIP = auto()
@@ -182,14 +182,6 @@ class RoundController:
         self.submit_flip_decision(flipped)
         return flipped
 
-    def run_all_bot_flips_until_human_or_turn(self) -> None:
-        """
-        Convenience method, keeps resolving bot flips until either
-        - a human flip decision is needed, or
-        - flip phase is done and we enter TURNS
-        """
-        while self.stage == RoundStage.FLIP and self.current_actor_is_bot():
-            self.run_bot_flip_step()
 
     def _finish_flip_phase(self) -> None:
         """
@@ -311,15 +303,6 @@ class RoundController:
         move = bot.select_move(self.state, self.legal_moves, self.rng)
         self.apply_selected_move(move)
         return move
-
-    def run_all_bot_turns_until_human_or_finished(self) -> None:
-        """
-        Convenience method: keeps resolving bot turns until either
-        - a human move is needed, or
-        - the round finishes.
-        """
-        while self.stage == RoundStage.TURNS and self.current_actor_is_bot():
-            self.run_bot_turn()
 
     def preview_scout_candidate(self, candidate: ScoutCandidate) -> GameState:
         """

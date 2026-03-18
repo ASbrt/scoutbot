@@ -10,7 +10,7 @@ class GameController:
     Controls a full game of Scout across multiple rounds.
 
     Responsibilities:
-    - track game-wide scores
+    - track game scores
     - create and manage RoundControllers
     - rotate start player between rounds
     - collect round results

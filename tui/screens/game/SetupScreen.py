@@ -1,22 +1,29 @@
 import random
 from dataclasses import dataclass
-from typing import List
-
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static, Button, Select, Input, Checkbox
 from textual.containers import Vertical, Horizontal
 
+"""Lobby Screen for Game setup"""
+
+# TODO: If there is time left, adapt so multiple people can play at the same time
+
 @dataclass
 class GameConfig:
+    """Configuration payload passed from the lobby into GameScreen."""
+
     n_players: int
-    seat_types: List[str]
+    seat_types: list[str]
     seed: int
     show_bot_hands: bool = False
 
+
 class SetupScreen(Screen):
     """The Lobby Screen for configuring players and game settings."""
+
     def compose(self) -> ComposeResult:
+        """Render the configurable fields that define one game session."""
         yield Header()
         yield Static("LOBBY SETUP", id="setup_title")
         with Vertical(id="setup_body"):
@@ -37,7 +44,6 @@ class SetupScreen(Screen):
                 yield Checkbox("Show", value=False, id="show_bot_hands")
 
             with Vertical(id="seats_container"):
-                # Dynamic seat selectors will be mounted here
                 pass
 
             with Horizontal(id="setup_footer"):
@@ -46,18 +52,16 @@ class SetupScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        # Fixing the MountError: Don't call _rebuild_seats here directly if children use .mount()
-        # Instead, Textual recommends using compose if possible, or ensuring parent is attached.
-        # Since we use query_one("#seats_container"), we must ensure it exists.
-        # Actually, the error was because we did row.mount(child) BEFORE row was mounted to the container.
+        """Populate the initial seat list once the container exists in the DOM."""
         self._rebuild_seats(3)
 
     def _rebuild_seats(self, n: int) -> None:
+        """Regenerate the seat selectors after the player-count changes."""
         container = self.query_one("#seats_container", Vertical)
         container.remove_children()
         for i in range(n):
-            # FIX: Use Horizontal(Static(...), Select(...)) in constructor instead of .mount() 
-            # to avoid MountError when row itself isn't mounted yet.
+            # Build the entire row in one constructor call so Textual can mount a
+            # ready-made subtree instead of piecemeal child widgets.
             row = Horizontal(
                 Static(f"Player {i}: ", classes="seat_label"),
                 Select(
@@ -70,26 +74,29 @@ class SetupScreen(Screen):
             container.mount(row)
 
     def on_select_changed(self, event: Select.Changed) -> None:
+        """Resize the seat selector list when the player count changes."""
         if event.select.id == "n_players":
             self._rebuild_seats(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Either leave the lobby or assemble a GameConfig and launch gameplay."""
         if event.button.id == "back":
             self.app.pop_screen()
         elif event.button.id == "start":
             n_players = self.query_one("#n_players", Select).value
             seed_text = self.query_one("#seed", Input).value.strip()
             seed = int(seed_text) if seed_text else random.randrange(10**9)
-            
+
             seat_types = []
             for i in range(n_players):
                 seat_types.append(self.query_one(f"#seat_{i}", Select).value)
-            
+
             config = GameConfig(
-                n_players=n_players, 
-                seat_types=seat_types, 
+                n_players=n_players,
+                seat_types=seat_types,
                 seed=seed,
-                show_bot_hands=self.query_one("#show_bot_hands", Checkbox).value
+                show_bot_hands=self.query_one("#show_bot_hands", Checkbox).value,
             )
-            from .game.game_screen import GameScreen
+            from .GameScreen import GameScreen
+
             self.app.push_screen(GameScreen(config=config))

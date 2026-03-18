@@ -1,14 +1,13 @@
-from __future__ import annotations
+"""State machine for building human moves."""
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Optional
-
 from engine.state.GameState import ScoutCandidate
 
 
 class HumanTurnPhase(Enum):
-    """UI-only sub-phases for building one human move."""
+    """Sub-phases for building a human move."""
 
     ACTION_CHOICE = auto()
     SHOW_SELECT = auto()
@@ -19,7 +18,7 @@ class HumanTurnPhase(Enum):
 
 @dataclass
 class TurnInputState:
-    """Transient input state owned by GameScreen, never by the engine."""
+    """Transient input state owned by GameScreen"""
 
     phase: HumanTurnPhase = HumanTurnPhase.ACTION_CHOICE
     cursor_index: int = 0
@@ -59,6 +58,8 @@ class TurnInputState:
         """Lock in the table card and move to hand insertion selection."""
         self.phase = HumanTurnPhase.SCOUT_INSERT_POS
         self.cursor_index = 0
+        # The chosen table card remains fixed while the player picks insertion
+        # position and final orientation.
         self.scouted_table_index = table_index
 
     def start_orientation_select(self) -> None:
@@ -71,6 +72,8 @@ class TurnInputState:
         self.phase = HumanTurnPhase.SHOW_SELECT
         self.cursor_index = 0
         self.selected_indices.clear()
+        # Remember the scout half so `_try_show()` can match the final selection
+        # against the controller-provided Scout&Show moves.
         self.sas_scout_candidate = scout_candidate
 
     def toggle_scout_flip(self) -> None:
