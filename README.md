@@ -45,7 +45,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-## 2. Start the TUI
+## 2. Start the TUI from project root directory
 
 ```bash
 python3 -m tui.app
