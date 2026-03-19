@@ -20,6 +20,8 @@ All cards have two values, where only one side is active depending on orientatio
 
 The basic rules are simple, but the strategy quickly becomes deeper than it seems.
 
+For a more in depth explanation of how the game works check out this video: https://www.youtube.com/watch?v=Ymb0YsMzP2M
+
 ---
 
 # Project Goals
