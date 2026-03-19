@@ -1,3 +1,10 @@
+"""
+This is the simplest bot possible. It chooses to flip its hand 50% of the time. In move selection it partitions all possible moves
+then prefers to play a Show Move with a bias of 80%. Scout Moves and Scout&Show Moves (if available) are systematically
+overrepresented in the set of possible moves, even if most of these do not make sense from a real player's perspective.
+So this bias is necessary to make the RandomBot act somewhat reasonable.
+"""
+
 import random
 from engine.state.CardCore import Card
 from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove

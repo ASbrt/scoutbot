@@ -5,7 +5,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static
-from bots.Bots import RandomBot
+from bots.RandomBot import RandomBot
 from tools.data_export import ExportBundle, export_game_result
 from tui.screens.game.rendering.GameRenderer import GameRenderer
 from .utils import generate_game_id

@@ -6,8 +6,6 @@ def get_legal_show_candidates(state: GameState) -> list[ShowCandidate]:
     Using a list of ShowCandidates, compares them to the active show on the table.
     Determines the list of all playable ShowCandidates given the current table in GameState.
     Playable ShowCandidates are the ones that beat the Show that is active on the table.
-    :param state:
-    :return:
     """
     hand = state.hands[state.current_player]
     candidates = determine_show_candidates(hand)
@@ -179,8 +177,6 @@ def apply_scout_and_show_move(state: GameState, candidate: ScoutAndShowCandidate
 def get_all_legal_moves(state: GameState) -> list[Move]:
     """
     Top level api-call for returning all possible moves
-    :param state:
-    :return:
     """
     moves = []
 

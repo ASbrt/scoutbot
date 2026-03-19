@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass, replace
 
 # Dataclass takes care of a bunch of boilerplate code for defining a class that mainly holds state
@@ -38,7 +39,7 @@ DECK_PAIRS = [
     (10, 5), (1, 5), (1, 8), (9, 2), (3, 6), (6, 10)
 ]
 
-def build_deck(rng, n_players):
+def build_deck(rng: random.Random, n_players: int) -> list[Card]:
     """
     Builds a deck of card objects. Randomizing the cards orientations (flipped value) and order based on a random seed
     defined in the main simulation loop.
@@ -59,7 +60,7 @@ def build_deck(rng, n_players):
     rng.shuffle(deck)
     return deck
 
-def deal_hands(deck: list[Card], n_players: int):
+def deal_hands(deck: list[Card], n_players: int) -> list[list[Card]]:
     if len(deck) % n_players != 0:
         raise ValueError("Deck size must be divisible by player count")
 

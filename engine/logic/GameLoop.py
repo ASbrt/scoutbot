@@ -41,7 +41,7 @@ def play_round(bots: list, rng: random.Random, n_players: int, round_num: int, s
 
 
 def play_game(game_id: int, seed: int, bots: list, rng: random.Random, n_players: int,
-              log_turns: bool = True) -> GameResult:
+              log_turns: bool = True, verbose: bool = False) -> GameResult:
     """
     Play one full game automatically.
 
@@ -54,6 +54,7 @@ def play_game(game_id: int, seed: int, bots: list, rng: random.Random, n_players
         log_turns=log_turns,
         game_id=game_id,
         seed=seed,
+        verbose=verbose
     )
 
     while not controller.is_finished:

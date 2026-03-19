@@ -89,10 +89,29 @@ def determine_show_candidates(hand: list[Card]) -> list[ShowCandidate]:
 
     return candidates
 
+
+def compute_hand_rank(hand: list[Card]) -> tuple[int, int, int]:
+    """
+    Aggregates the total value of a hand across all possible show candidates. Returns a rank tuple for the entire hand
+
+    TODO: Discount for hand size? -> might be needed for fair comparisons between current and future hands
+    """
+
+    candidates = determine_show_candidates(hand)
+    total_length, total_kind_rank, total_value_rank = 0, 0, 0
+
+    for candidate in candidates:
+        length, kind_rank, value_rank = candidate.rank
+        total_length += length
+        total_kind_rank += kind_rank
+        total_value_rank += value_rank
+
+    return (total_length, total_kind_rank, total_value_rank)
+
+
 def any_empty_hand(state: GameState) -> bool:
     """
     Round termination helper for determining if any player emptied their hand
-    :param state:
     """
     return any(len(hand) == 0 for hand in state.hands)
 
@@ -100,7 +119,6 @@ def unbeaten_show_cycle(state: GameState) -> bool:
     """
     Round termination helper for evaluating the second round end condition, which is a player putting out a Show Move
     no other player can beat, so they're all forced to scout
-    :param state:
     """
     return (state.table is not None and state.last_show_player is not None and state.current_player == state.last_show_player)
 
@@ -111,7 +129,7 @@ def apply_end_of_round_penalties(state: GameState, unbeaten_show_cycle: bool = F
     remaining cards in hand.
     :param state: Ending GameState
     :param unbeaten_show_cycle: True if a player played an unbeaten show
-    :return: Updates Scores
+    :return: Updated Scores
     """
     scores = list(state.scores)
     exempt_player = state.last_show_player if unbeaten_show_cycle else None

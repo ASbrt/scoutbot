@@ -1,3 +1,4 @@
 textual
 pandas
 dtale
+tqdm

@@ -1,4 +1,5 @@
 import random
+from tabnanny import verbose
 from typing import Optional, List
 from engine.controllers.RoundController import RoundController
 from tools.Logging import GameResult, RoundResult
@@ -18,7 +19,7 @@ class GameController:
     """
 
     def __init__(self, game_id: int, seed: int, bots: list, rng: random.Random, n_players: int,
-                 log_turns: bool = True):
+                 log_turns: bool = True, verbose: bool = False):
         if len(bots) != n_players:
             raise ValueError(f"Need {n_players} players, got {len(bots)} in bot list")
 
@@ -36,6 +37,7 @@ class GameController:
         self.start_player: Optional[int] = None
 
         self.current_round: Optional[RoundController] = None
+        self.verbose = verbose
 
     @property
     def is_finished(self) -> bool:
@@ -49,6 +51,9 @@ class GameController:
             raise RuntimeError("Game is already finished")
         if self.current_round is not None:
             raise RuntimeError("Current round must be finalized before starting a new one")
+
+        if self.verbose:
+            print(f"Starting new round {self.round_number}...")
 
         self.current_round = RoundController(
             bots=self.bots,
@@ -68,6 +73,9 @@ class GameController:
         """
         if self.current_round is None:
             raise RuntimeError("No active round to finalize")
+
+        if self.verbose:
+            print(f"Finalizing round {self.round_number}")
 
         result = self.current_round.finalize_round()
         self.round_results.append(result)

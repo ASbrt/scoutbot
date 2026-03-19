@@ -1,0 +1,11 @@
+game_id,seed,mc_rollouts,duration_sec,n_players,winner_seat,winner_bot,seat_0_bot,score_0,seat_1_bot,score_1,seat_2_bot,score_2
+0,10000,5,97.9700203340035,3,0,MCBot,MCBot,34,RandomBot,23,RandomBot,31
+1,10001,5,196.89025391699397,3,2,RandomBot,MCBot,42,RandomBot,39,RandomBot,49
+2,10002,5,98.77713737500017,3,0,MCBot,MCBot,53,RandomBot,40,RandomBot,46
+3,10003,5,112.3433942499978,3,2,RandomBot,MCBot,-16,RandomBot,9,RandomBot,50
+4,10004,5,91.48347525001736,3,0,MCBot,MCBot,48,RandomBot,36,RandomBot,47
+5,10005,5,94.00158191699302,3,2,RandomBot,MCBot,60,RandomBot,41,RandomBot,68
+6,10006,5,92.0751452500117,3,2,RandomBot,MCBot,42,RandomBot,43,RandomBot,61
+7,10007,5,138.53478116699262,3,2,RandomBot,MCBot,36,RandomBot,29,RandomBot,47
+8,10008,5,93.13776849998976,3,2,RandomBot,MCBot,58,RandomBot,44,RandomBot,70
+9,10009,5,123.3469614169735,3,2,RandomBot,MCBot,38,RandomBot,19,RandomBot,49
