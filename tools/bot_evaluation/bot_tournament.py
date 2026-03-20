@@ -6,7 +6,7 @@ of those starting moves. Combined with rollouts, the compute time explodes quick
 Best to run this while doing something else unless it is for like 1 or 2 games. Or not at all for now.
 """
 
-# TODO: make HeuristicBot, then: use it to prune some of the
+# TODO: turn this into an actual flexible tournament runner, then wire into TUI
 
 import random
 import time

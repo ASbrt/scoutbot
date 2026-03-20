@@ -8,10 +8,16 @@ So this bias is necessary to make the RandomBot act somewhat reasonable.
 import random
 from engine.state.CardCore import Card
 from engine.state.GameState import GameState, Move, ShowMove, ScoutMove, ScoutAndShowMove
+from bots.BaseBot import BaseBot
 
-# TODO: Make Bot Interface? -> Different bot types could simply inherit the interface
 
-class RandomBot:
+class RandomBot(BaseBot):
+    bot_key = "random"
+    bot_label = "Random Bot"
+
+    def __init__(self, verbose: bool = False):
+        super().__init__(name="RandomBot", verbose=verbose)
+
     def choose_flip(self, hand: list[Card], player_index: int, rng: random.Random) -> bool:
         # 50/50 flip decision
         return rng.random() < 0.5

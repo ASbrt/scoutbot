@@ -3,22 +3,26 @@ from engine.logic.legal_moves import apply_move
 from engine.state.CardCore import Card
 from engine.state.GameState import GameState, Move
 from .search_utils import simulate_round_from_state, calculate_player_round_score_delta, build_rollout_bots
+from ..BaseBot import BaseBot
 
-# TODO: prune move options once HeuristicBot is implemented. Simulating a game with MCBot takes way to much time
+# TODO: prune move options (With Heuristics?). Simulating a game with MCBot takes way to much time
+# TODO: implement flip search --> computationally expensive though when simulating like this...
 
-class MCBot:
+class MCBot(BaseBot):
     """
     For each legal move, simulates the rest of the round multiple times and
     chooses the move with the best average outcome for the current player (biggest score delta)
     """
+    bot_key = "mc1"
+    bot_label = "Simple Monte Carlo Bot"
 
     def __init__(self, n_rollouts: int = 50, verbose: bool = False):
+        super().__init__(name="MCBot", verbose=verbose)
         self.n_rollouts = n_rollouts
-        self.verbose = verbose
 
     def choose_flip(self, hand: list[Card], player_index: int, rng: random.Random) -> bool:
         """
-        Flip choice is random for now, search for this will come later
+        Flip choice is random for now, focusing on search
         """
         return rng.random() < 0.5
 

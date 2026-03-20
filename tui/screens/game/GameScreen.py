@@ -5,7 +5,6 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static
-from bots.RandomBot import RandomBot
 from tools.data_export import ExportBundle, export_game_result
 from tui.screens.game.rendering.GameRenderer import GameRenderer
 from .utils import generate_game_id
@@ -16,13 +15,18 @@ from .userInput.TurnInteractionController import TurnInteractionController
 from .userInput.HumanInputUIState import TurnInputState
 from .logging.session_event_logger import log_session_events
 from .widgets import GameLog, StateOverview
+from bots.bot_the_builder import build_a_bot
+
+# TODO: Make multiple humans in a game clearer to handle in UI, possibly a bigger refactor though...
+# TODO: Clearer play by play needed, sleep timers?
+# TODO: Add a quit button!!
+# TODO: Add "Bot is thinking..." loading indicator / integrate show hands, also: UI not updating when waiting for bot turn
 
 
 class GameScreen(Screen):
     """
-    Top-level coordinator for the ScoutBot gameplay screen. This screen owns the Textual layout, the session lifecycle
-    and the modals. Rendering is delegated to GamePresenter, and human move-building is delegated
-    to TurnInteractionController.
+    Top-level coordinator for the ScoutBot gameplay screen. This screen owns the layout, the session lifecycle
+    and the modals. Rendering is handled by GameRenderer, and human move-building by TurnInteractionController.
     """
 
     BINDINGS = [
@@ -40,12 +44,13 @@ class GameScreen(Screen):
     can_focus = True
 
     def __init__(self, config):
-        """Initialize all components used for one visible game screen."""
+        """Initialize all parameters used for one visible game screen."""
         super().__init__()
         self.config = config
         self.rng = random.Random(config.seed)
         # A `None` seat is interpreted as a human player, bot instances occupy the remaining seats.
-        self.bots = [RandomBot() if seat_type == "random" else None for seat_type in config.seat_types]
+        self.bots = [None if bot_key == "human" else build_a_bot(bot_key, **kwargs)
+                     for bot_key, kwargs in config.seat_configs]
         self.session: Optional[GameSession] = None
         self.input_state = TurnInputState()
         self.renderer = GameRenderer(self)
@@ -55,7 +60,7 @@ class GameScreen(Screen):
         self._export_bundle: Optional[ExportBundle] = None
 
     def compose(self) -> ComposeResult:
-        """Build the static gameplay layout; live data is filled in later."""
+        """Build the static gameplay layout, live data is filled in later."""
         yield Header()
         with Horizontal(id="game_top_bar"):
             yield Static("ScoutBot - Game View", id="game_title")

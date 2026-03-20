@@ -7,10 +7,8 @@ from textual.containers import Vertical
 
 
 class HomeScreen(Screen):
-    """The entry point of the application."""
-
     def compose(self) -> ComposeResult:
-        """Build the small top-level navigation menu."""
+        """Builds some buttons for navigation, very basic layout"""
         yield Header()
         yield Static("SCOUT BOT", id="main_title")
         with Vertical(id="menu_container"):
@@ -23,7 +21,7 @@ class HomeScreen(Screen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Route button presses to the appropriate next screen or action."""
         if event.button.id == "nav_play":
-            from .game.SetupScreen import SetupScreen
+            from tui.screens.game.SetupScreen import SetupScreen
 
             self.app.push_screen(SetupScreen())
         elif event.button.id == "nav_quit":
