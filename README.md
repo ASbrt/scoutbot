@@ -28,7 +28,7 @@ For a more in depth explanation of how the game works check out this video: http
 
 The project serves several purposes:
 
-- build a deterministic simulation engine for Scout
+- build a simulation engine for Scout
 - explore Monte Carlo Tree Search
 - experiment with ML approaches for strategy learning
 - generate datasets from simulated and human gameplay
