@@ -13,13 +13,12 @@ from tui.screens.game.logging.build_move_details import build_move_details
 @dataclass(frozen=True)
 class SessionEvent:
     """
-    Events emitted while the session advances. GameSession converts controller-side progress into small event objects so
+    Shape of the events emitted while the session advances. GameSession converts controller-side progress into small event objects so
     GameScreen can log and render without needing to inspect controller internals.
     """
 
     kind: str
-    # To avoid shallow freezing problems. field() makes data optional, default_factory initializes a new dict object in memory,
-    # so that a shared state across different instances is avoided
+    # To avoid shallow freezing problems, i.e. shared state over multiple instances
     data: dict = field(default_factory=dict)
 
 

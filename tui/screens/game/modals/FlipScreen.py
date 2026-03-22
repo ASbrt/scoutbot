@@ -5,9 +5,7 @@ from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.widgets import Static, Button
 from textual.containers import Vertical, Horizontal
-
 from engine.state.CardCore import Card
-
 from ..rendering.render_cards import render_card_row
 
 
@@ -17,8 +15,8 @@ class FlipScreen(ModalScreen):
         self.hand = hand
 
     def compose(self) -> ComposeResult:
-        """Render both hand orientations side-by-side so the choice is obvious."""
-        # The controller owns the decision, this modal just previews the two possible submissions before returning
+        """Render both hand orientations side-by-side. The controller owns the decision, this modal just previews the
+        two possible submissions before returning"""
         flipped_hand = [c.flip_card() for c in self.hand]
 
         with Vertical(id="flip_container"):

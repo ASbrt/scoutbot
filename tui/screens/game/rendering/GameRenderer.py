@@ -10,8 +10,6 @@ from ..widgets import StateOverview
 if TYPE_CHECKING:
     from tui.screens.game.GameScreen import GameScreen
 
-"""This is the rendering layer that turns session/controller state into visible widgets."""
-
 class GameRenderer:
     """Owns all widget-refresh and view-rendering logic for GameScreen."""
 

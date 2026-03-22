@@ -58,7 +58,7 @@ class GameLog(RichLog):
 
         if isinstance(move, ScoutAndShowMove):
             s = move.candidate.scout
-            return (f"S&S: {scouted} -> {result} @ Hand[{s.hand_insert_index}], "
+            return (f"S&S: {scouted} -> {result} @ HandIndex[{s.hand_insert_index}], "
                     f"then show {move.candidate.show.kind} {cards} | Delta: {delta}")
 
         return str(move)

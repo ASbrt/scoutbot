@@ -1,3 +1,5 @@
+""" This is the lobby screen for game setup, handles config and passes that on to GameScreen"""
+
 import random
 from dataclasses import dataclass
 from textual.app import ComposeResult
@@ -6,8 +8,6 @@ from textual.widgets import Header, Footer, Static, Button, Select, Input, Check
 from textual.containers import Vertical, Horizontal
 from bots.bot_the_builder import get_lobby_seat_options
 
-
-"""Lobby Screen for Game setup"""
 
 # TODO: Dynamically get bot params? Stuff like TOKEN_PENALTY would maybe be interesting. Behavior sliders?
 # TODO: Handle hanging show hands param

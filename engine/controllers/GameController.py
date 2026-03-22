@@ -1,5 +1,4 @@
 import random
-from tabnanny import verbose
 from typing import Optional, List
 from engine.controllers.RoundController import RoundController
 from tools.Logging import GameResult, RoundResult

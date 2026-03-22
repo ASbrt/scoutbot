@@ -73,7 +73,3 @@ def deal_hands(deck: list[Card], n_players: int) -> list[list[Card]]:
         hands.append(hand)
 
     return hands
-
-
-def copy_card(card: Card) -> Card:
-    return replace(card)
