@@ -332,12 +332,16 @@ class RoundController:
             unbeaten_show_cycle=self.ended_by_unbeaten_cycle,
         )
 
+        # Return penalties for display in summary modals
+        penalties = [post - pre for pre, post in zip(self.state.scores, scores_out)]
+
         return RoundResult(
             round_num=self.round_num,
             start_player=self.start_player,
             end_reason="unbeaten_show_cycle" if self.ended_by_unbeaten_cycle else "empty_hand",
             scores_in=list(self.scores_in),
             scores_out=list(scores_out),
+            penalties=penalties,
             flip_log=list(self.flip_log),
             turn_log=list(self.turn_log),
         )

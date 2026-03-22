@@ -30,70 +30,60 @@ class GameLog(RichLog):
     def log_round_start(self, round_num: int, total_rounds: int, n_players: int) -> None:
         self.write(f"[bold green]Round {round_num}/{total_rounds}[/] begins with {n_players} players.")
 
-    def log_round_end(
-        self, reason: str, scores_in: list[int], scores_out: list[int], *, round_num: int, total_rounds: int) -> None:
+    def log_round_end(self, reason: str, scores_in: list[int], scores_out: list[int], *, round_num: int, total_rounds: int) -> None:
+
         delta = self._format_score_delta([out - in_ for in_, out in zip(scores_in, scores_out)])
         scores = ", ".join(f"P{i}: {score}" for i, score in enumerate(scores_out))
         self.write(f"[bold yellow]Round {round_num}/{total_rounds} over[/]: {reason} | Delta: {delta} | Scores -> {scores}")
 
-    def log_move(self, player: int, move, *, is_bot: bool, context: Optional[dict] = None) -> None:
-        """Render one resolved move into a sentence."""
-        actor = f"P{player} (Bot)" if is_bot else "You"
-        self.write(f"{actor}: {self._describe_move(move, context or {})}")
+    def log_move(self, player: int, move, *, bot_list: list, context: Optional[dict] = None) -> None:
+        """Turns a resolved move into a sentence."""
+        actor = _player_label(player, bot_list)
+        self.write(f"{actor}: {self.describe_move(move, context or {})}")
 
-    def _describe_move(self, move, context: dict) -> str:
-        """Translate typed move objects into readable prose for the side log."""
+    def describe_move(self, move, context: dict) -> str:
+        # Pre-extract data to avoid repetition
+        cards = self._format_cards(context.get("cards", []))
+        delta = self._format_score_delta(context.get("score_delta", []))
+        scouted = self._format_card(context.get("scout_card"))
+        result = self._format_card(context.get("scout_result_card"))
+
         if isinstance(move, ShowMove):
-            candidate = move.candidate
-            cards = self._format_cards(context.get("cards"))
-            delta = self._format_score_delta(context.get("score_delta", []))
-            return f"Show {candidate.kind} {cards} | Score delta: {delta}"
+            return f"Show {move.candidate.kind} {cards} | Delta: {delta}"
+
         if isinstance(move, ScoutMove):
-            candidate = move.candidate
-            scouted = self._format_card(context.get("scout_card"))
-            result = self._format_card(context.get("scout_result_card"))
-            delta = self._format_score_delta(context.get("score_delta", []))
-            return (
-                f"Scout {scouted} from table[{candidate.table_index}] to hand[{candidate.hand_insert_index}] "
-                f"as {result} | Score delta: {delta}"
-            )
+            c = move.candidate
+            return (f"Scout {scouted} (Table[{c.table_index}]) to Hand[{c.hand_insert_index}] "
+                    f"as {result} | Delta: {delta}")
+
         if isinstance(move, ScoutAndShowMove):
-            scout = move.candidate.scout
-            show = move.candidate.show
-            scouted = self._format_card(context.get("scout_card"))
-            result = self._format_card(context.get("scout_result_card"))
-            cards = self._format_cards(context.get("cards"))
-            delta = self._format_score_delta(context.get("score_delta", []))
-            return (
-                f"Scout & Show: {scouted} -> {result} at hand[{scout.hand_insert_index}], "
-                f"then show {show.kind} {cards} | Score delta: {delta}"
-            )
+            s = move.candidate.scout
+            return (f"S&S: {scouted} -> {result} @ Hand[{s.hand_insert_index}], "
+                    f"then show {move.candidate.show.kind} {cards} | Delta: {delta}")
+
         return str(move)
+
 
     def _format_card(self, card: Optional[Card]) -> str:
         """Render one card in a tiny `(active|inactive)` summary form."""
         if card is None:
-            return "(?)"
+            return ""
         return f"({card.active}|{card.inactive})"
 
     def _format_cards(self, cards) -> str:
         """Render a sequence of cards for move narration."""
-        if not cards:
-            return "(no cards)"
         return " ".join(self._format_card(card) for card in cards)
 
     def _format_score_delta(self, score_delta: list[int]) -> str:
         """Only include score entries that changed on the move."""
         changes = [f"P{i} {delta:+d}" for i, delta in enumerate(score_delta) if delta]
-        return ", ".join(changes) if changes else "no score change"
+        return ", ".join(changes) if changes else "0"
 
 
 class StateOverview(Vertical):
     """Panel to display player scores, hand sizes and S&S tokens."""
 
     def update_summary(self, game_state, bots, current_player_idx=0) -> None:
-        """Render player overview from GameState."""
-
         # Refresh
         self.remove_children()
 
@@ -104,19 +94,31 @@ class StateOverview(Vertical):
 
         # formatting
         for i in range(len(scores)):
-            is_human = bots[i] is None
-            label = "YOU" if is_human else f"P{i} (Bot)"
-            highlight = "active_player" if i == current_player_idx else ""
+            label = _player_label(i, bots)
 
-            token_val = tokens[i]
-            token_text = "Ready" if token_val else "Used"
-            token_markup = (f"[bold green]{token_text}[/]" if token_val else f"[bold red]{token_text}[/]")
+            # Styling logic
+            highlight = "active_player" if i == current_player_idx else ""
+            token_markup = f"[bold green]Ready[/]" if tokens[i] else f"[bold red]Used[/]"
 
             row_text = (
-                f"{label:<8} "
-                f"H:[bold yellow]{hand_sizes[i]}[/]  "
-                f"Pts:[bold cyan]{scores[i]}[/]  "
+                f"{label:<12} "  
+                f"H:[bold yellow]{hand_sizes[i]:>2}[/]  "
+                f"Pts:[bold cyan]{scores[i]:>3}[/]  "
                 f"S&S:{token_markup}"
             )
 
             self.mount(Static(row_text, classes=f"score_row {highlight}"))
+
+# TODO: extract and make helper, its also in summary builder now --> other formatting helpers?? evaluate
+def _player_label(index: int, bots: list) -> str:
+    """Handles seat labeling."""
+    is_human = bots[index] is None
+
+    if not is_human:
+        return f"P{index} (Bot)"
+
+    human_count = bots.count(None)
+    if human_count > 1:
+        return f"P{index} (Human)"
+
+    return "YOU"

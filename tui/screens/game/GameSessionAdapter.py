@@ -18,11 +18,13 @@ class SessionEvent:
     """
 
     kind: str
+    # To avoid shallow freezing problems. field() makes data optional, default_factory initializes a new dict object in memory,
+    # so that a shared state across different instances is avoided
     data: dict = field(default_factory=dict)
 
 
 class GameSession:
-    """Handles game and round progression for the TUI, stopping when human input is required."""
+    """Handles game and round progression for the TUI, stops when human input is needed."""
 
     def __init__(self, *, seed: int, bots: list, rng: random.Random, n_players: int, game_id: int = 0,
                  log_turns: bool = True) -> None:
@@ -36,42 +38,37 @@ class GameSession:
             log_turns=log_turns,
         )
         self._last_visible_state: Optional[GameState] = None
-        self._final_result: Optional[GameResult] = None
+        self.final_result: Optional[GameResult] = None
 
     @property
     def round_controller(self) -> Optional[RoundController]:
-        """Expose the currently active round, if the game is inside one."""
+        """Exposes the currently active round controller, if present."""
         return self.game_controller.current_round
 
     @property
     def display_state(self) -> Optional[GameState]:
         """
-        Returns the latest state the TUI should render. During an active round we show the live controller state.
-        Between rounds or after game end we keep the last visible state around so the screen does not
-        suddenly go blank before summary modals appear.
+        Returns the latest state the TUI should render. Between rounds or after game end we keep the last visible state
+        around so the screen does not suddenly go blank before summary modals appear.
         """
         round_controller = self.round_controller
         if round_controller is not None and round_controller.state is not None:
             return round_controller.state
         return self._last_visible_state
 
+    # -------------- Main advancement functions
+
     def start(self) -> list[SessionEvent]:
         """Start the first round and return the initial session events."""
-        if self.round_controller is not None or self._final_result is not None:
+        if self.round_controller is not None or self.final_result is not None:
             raise RuntimeError("GameSession has already been started")
 
-        # Starting the round through GameController keeps round numbering, rotating
-        # start players, and final scores in one authoritative place.
         round_controller = self.game_controller.start_next_round()
         return [self._build_round_started_event(round_controller)]
 
     def advance_until_human_or_end(self) -> list[SessionEvent]:
         """
-        Keep advancing controllers until the UI needs to step in again.
-
-        This is intentionally broader than RoundController's bot helpers because the
-        TUI needs one call that can cross round boundaries and eventually finish the
-        whole game, not just one stage inside one round.
+        Keeps advancing controllers until the UI needs to step in again. Builds a list of events
         """
         events: list[SessionEvent] = []
 
@@ -79,21 +76,22 @@ class GameSession:
             round_controller = self.round_controller
 
             if round_controller is None:
-                # Either the game has not started its next round yet, or the previous
-                # round was just finalized and we need to move at the game level.
+                # Either the game has not started its next round yet, or the previous round was just finalized
+                # and we need to move at the game level
                 if not self._advance_game_level(events):
                     break
                 continue
 
             if round_controller.stage == RoundStage.FLIP:
                 # Human stops are the only time we hand control back to the TUI
-                if self._waiting_for_human_flip(round_controller):
+                if round_controller.stage == RoundStage.FLIP and not round_controller.current_actor_is_bot():
                     break
                 self._advance_flip_stage(round_controller, events)
                 continue
 
             if round_controller.stage == RoundStage.TURNS:
-                if self._waiting_for_human_turn(round_controller):
+                # Break for human turns
+                if round_controller.stage == RoundStage.TURNS and not round_controller.current_actor_is_bot():
                     break
                 self._advance_turn_stage(round_controller, events)
                 continue
@@ -106,9 +104,15 @@ class GameSession:
 
         return events
 
-    def submit_flip(self, flipped: bool) -> list[SessionEvent]:
-        """Submit the current human flip choice."""
-        round_controller = self._require_round_controller()
+    # ------------ Submitting moves
+
+    def submit_flip_choice(self, flipped: bool) -> list[SessionEvent]:
+        """Submit the current human flip choice"""
+
+        round_controller = self.round_controller
+        if round_controller is None:
+            raise RuntimeError("No active round controller")
+
         if round_controller.stage != RoundStage.FLIP:
             raise RuntimeError("submit_flip is only valid during flip phase")
         if round_controller.current_actor_is_bot():
@@ -127,9 +131,13 @@ class GameSession:
             )
         ]
 
-    def submit_move(self, move: Move) -> list[SessionEvent]:
+    def submit_move_choice(self, move: Move) -> list[SessionEvent]:
         """Submit one complete human move object to the controller."""
-        round_controller = self._require_round_controller()
+
+        round_controller = self.round_controller
+        if round_controller is None:
+            raise RuntimeError("No active round controller")
+
         if round_controller.stage != RoundStage.TURNS or round_controller.state is None:
             raise RuntimeError("submit_move is only valid during turn phase")
         if round_controller.current_actor_is_bot():
@@ -145,15 +153,27 @@ class GameSession:
             self._build_move_event(player, move, is_bot=False, state_before=state_before, state_after=round_controller.state)
         ]
 
+    # -------------- When to wait checks
+
     def waiting_for_human_flip(self) -> bool:
-        """Tell the screen whether a human flip modal should be opened now."""
+        """Tells the screen whether a human flip modal should be opened now."""
         round_controller = self.round_controller
-        return round_controller is not None and self._waiting_for_human_flip(round_controller)
+        return (
+                round_controller is not None and
+                round_controller.stage == RoundStage.FLIP and
+                not round_controller.current_actor_is_bot()
+        )
 
     def waiting_for_human_turn(self) -> bool:
-        """Tell the screen whether keyboard turn input should be active now."""
+        """Tells the screen whether keyboard turn input should be active now."""
         round_controller = self.round_controller
-        return round_controller is not None and self._waiting_for_human_turn(round_controller)
+        return (
+                round_controller is not None and
+                round_controller.stage == RoundStage.TURNS and
+                not round_controller.current_actor_is_bot()
+        )
+
+    # -------------- Screen utilities
 
     def latest_round_result(self) -> Optional[RoundResult]:
         """Return the most recently finalized round result, if one exists."""
@@ -166,29 +186,20 @@ class GameSession:
         return self.latest_round_result() is not None and self.round_controller is None and not self.is_game_over()
 
     def is_game_over(self) -> bool:
-        """Returns whether the final GameResult has already been built."""
-        return self._final_result is not None
+        """Returns whether the final GameResult has already been built. Bit nicer to read in GameScreen"""
+        return self.final_result is not None
 
-    def final_result(self) -> Optional[GameResult]:
-        """Exposes the final logged result once the full game has completed."""
-        return self._final_result
-
-    def _require_round_controller(self) -> RoundController:
-        """Fails if a caller tries to act without an active round."""
-        round_controller = self.round_controller
-        if round_controller is None:
-            raise RuntimeError("No active round controller")
-        return round_controller
+    # ---------------- Advancement helpers
 
     def _advance_game_level(self, events: list[SessionEvent]) -> bool:
-        """Handle either starting the next round or finishing the full game."""
+        """Handles either starting the next round or finishing the full game."""
         if self.game_controller.is_finished:
-            if self._final_result is None:
+            if self.final_result is None:
                 # The final GameResult is only built once, after all rounds have
                 # already been finalized back into GameController.
-                self._final_result = self.game_controller.build_result()
+                self.final_result = self.game_controller.build_result()
                 events.append(
-                    SessionEvent("game_finished", {"scores_final": list(self._final_result.scores_final)})
+                    SessionEvent("game_finished", {"scores_final": list(self.final_result.scores_final)})
                 )
             return False
 
@@ -240,6 +251,8 @@ class GameSession:
             )
         )
 
+    # ------------------ Event helpers
+
     def _build_round_started_event(self, round_controller: RoundController) -> SessionEvent:
         """Convert round-start controller data into a small UI event payload."""
         return SessionEvent(
@@ -263,8 +276,3 @@ class GameSession:
             },
         )
 
-    def _waiting_for_human_flip(self, round_controller: RoundController) -> bool:
-        return round_controller.stage == RoundStage.FLIP and not round_controller.current_actor_is_bot()
-
-    def _waiting_for_human_turn(self, round_controller: RoundController) -> bool:
-        return round_controller.stage == RoundStage.TURNS and not round_controller.current_actor_is_bot()

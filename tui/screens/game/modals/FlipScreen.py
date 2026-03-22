@@ -1,4 +1,4 @@
-"""Modal shown during the round-opening hand-orientation decision"""
+"""Modal shown during the round-opening flip decision"""
 
 from typing import List
 from textual.app import ComposeResult
@@ -12,16 +12,13 @@ from ..rendering.render_cards import render_card_row
 
 
 class FlipScreen(ModalScreen):
-    """A modal to choose hand orientation at the start of a round."""
-
     def __init__(self, hand: List[Card]):
         super().__init__()
         self.hand = hand
 
     def compose(self) -> ComposeResult:
         """Render both hand orientations side-by-side so the choice is obvious."""
-        # The controller owns the decision, this modal previews the two possible submissions before returning
-        # a boolean choice
+        # The controller owns the decision, this modal just previews the two possible submissions before returning
         flipped_hand = [c.flip_card() for c in self.hand]
 
         with Vertical(id="flip_container"):
@@ -41,7 +38,7 @@ class FlipScreen(ModalScreen):
             yield Static("Press K or F to choose", id="interaction_hint")
 
     def on_mount(self) -> None:
-        """Keep keyboard shortcuts on the modal itself instead of the buttons."""
+        """Keeps users from tabbing and hitting Enter to choose between the buttons"""
         self.query_one("#keep", Button).can_focus = False
         self.query_one("#flip", Button).can_focus = False
 
@@ -53,7 +50,7 @@ class FlipScreen(ModalScreen):
             self.dismiss(True)
 
     def on_key(self, event) -> None:
-        """Support quick keyboard-only confirmation for the flip choice."""
+        """Event listener to support keyboard confirmation"""
         if event.key.lower() == "k":
             self.dismiss(False)
         elif event.key.lower() == "f":

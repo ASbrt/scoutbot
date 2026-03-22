@@ -18,6 +18,7 @@ class GameRenderer:
     def __init__(self, screen: "GameScreen") -> None:
         self.screen = screen
 
+    # ----------- Screen refreshing and sub routes
     def refresh(self) -> None:
         """Refresh the visible widgets from the current session/controller state."""
         if self.screen.session is None:
@@ -132,6 +133,9 @@ class GameRenderer:
 
         self._render_bot_turn(hand_area, hint, hand, current_player)
         self._set_controls_enabled(False)
+
+
+    # ---------- Cursor handling
 
     def _table_cursor(self) -> set[int]:
         """Only show a table cursor while the human is picking a scout target."""

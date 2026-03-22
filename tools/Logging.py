@@ -30,6 +30,7 @@ class RoundResult:
     end_reason: str
     scores_in: list[int]
     scores_out: list[int]
+    penalties: list[int]
     flip_log: list[FlipRecord]
     turn_log: list[TurnRecord]
 

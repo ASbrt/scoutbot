@@ -20,7 +20,7 @@ from bots.bot_the_builder import build_a_bot
 # TODO: Make multiple humans in a game clearer to handle in UI, possibly a bigger refactor though...
 # TODO: Clearer play by play needed, sleep timers?
 # TODO: Add a quit button!!
-# TODO: Add "Bot is thinking..." loading indicator / integrate show hands, also: UI not updating when waiting for bot turn
+# TODO: Add "Bot is thinking..." loading indicator / integrate show hands, also: UI freeze when waiting for bot turn
 
 
 class GameScreen(Screen):
@@ -55,8 +55,8 @@ class GameScreen(Screen):
         self.input_state = TurnInputState()
         self.renderer = GameRenderer(self)
         self.turn_interaction = TurnInteractionController(self)
-        self._flip_modal_open = False
-        self._summary_modal_open = False
+        self._flip_modal_is_open = False
+        self._summary_modal_is_open = False
         self._export_bundle: Optional[ExportBundle] = None
 
     def compose(self) -> ComposeResult:
@@ -104,7 +104,7 @@ class GameScreen(Screen):
 
     @property
     def logger(self) -> GameLog:
-        """Convenience accessor for the side-panel log widget."""
+        """Convenience property for accessing the side-panel log widget."""
         return self.query_one("#game_log", GameLog)
 
     def start_game(self) -> None:
@@ -127,43 +127,43 @@ class GameScreen(Screen):
 
         self._handle_session_events(self.session.advance_until_human_or_end())
         self.renderer.refresh()
-        self._export_game_if_needed()
-        if self._open_summary_modal_if_needed():
+        self._export_game_check()
+        if self._open_summary_modal():
             return
-        self._open_flip_modal_if_needed()
+        self._open_flip_modal()
 
-    def _open_flip_modal_if_needed(self) -> None:
-        """Open the flip modal exactly when the session is waiting on a human flip."""
-        if self.session is None or self._flip_modal_open or self._summary_modal_open or not self.session.waiting_for_human_flip():
+    def _open_flip_modal(self) -> None:
+        """Open the flip modal when the session is waiting on a human flip."""
+        if self.session is None or self._flip_modal_is_open or self._summary_modal_is_open or not self.session.waiting_for_human_flip():
             return
 
         round_controller = self.session.round_controller
-        self._flip_modal_open = True
+        self._flip_modal_is_open = True
         self.logger.log_phase("Hand Flip Decision")
         self.app.push_screen(FlipScreen(round_controller.get_flip_hand()), self.handle_flip_result)
 
     def handle_flip_result(self, flipped: bool) -> None:
         """Receive the modal result, submit it, and resume session advancement."""
-        self._flip_modal_open = False
+        self._flip_modal_is_open = False
         if self.session is None:
             return
 
-        self._handle_session_events(self.session.submit_flip(flipped))
+        self._handle_session_events(self.session.submit_flip_choice(flipped))
         self.input_state.reset()
         self._advance_session()
 
-    def _open_summary_modal_if_needed(self) -> bool:
+    def _open_summary_modal(self) -> bool:
         """Open a round-end or game-end summary modal if one is pending."""
-        if self._summary_modal_open:
+        if self._summary_modal_is_open:
             return True
         if self.session is None:
             return False
 
         if self.session.is_game_over():
-            final_result = self.session.final_result()
+            final_result = self.session.final_result
             if final_result is None:
                 return False
-            self._summary_modal_open = True
+            self._summary_modal_is_open = True
             self.app.push_screen(
                 build_game_summary_modal(
                     final_result,
@@ -178,7 +178,7 @@ class GameScreen(Screen):
             round_result = self.session.latest_round_result()
             if round_result is None:
                 return False
-            self._summary_modal_open = True
+            self._summary_modal_is_open = True
             self.app.push_screen(
                 build_round_summary_modal(round_result, self.bots),
                 self._handle_summary_modal_closed,
@@ -189,7 +189,7 @@ class GameScreen(Screen):
 
     def _handle_summary_modal_closed(self, _result=None) -> None:
         """Resume play after round summaries or leave the screen after game end."""
-        self._summary_modal_open = False
+        self._summary_modal_is_open = False
         if self.session is None:
             return
 
@@ -199,14 +199,12 @@ class GameScreen(Screen):
 
         self._advance_session()
 
-    def _export_game_if_needed(self) -> None:
+    def _export_game_check(self) -> None:
         """Persist the finished game once, right after the final result exists."""
         if self.session is None or not self.session.is_game_over() or self._export_bundle is not None:
             return
 
-        result = self.session.final_result()
-        if result is None:
-            return
+        result = self.session.final_result
 
         try:
             # Export after `presenter.refresh()` so the user still sees the final
@@ -224,15 +222,18 @@ class GameScreen(Screen):
         if self.session is None:
             return
 
-        self._handle_session_events(self.session.submit_move(move))
+        self._handle_session_events(self.session.submit_move_choice(move))
         self.input_state.reset()
         self._advance_session()
 
     def _handle_session_events(self, events: list[SessionEvent]) -> None:
-        """Apply the small screen-side reactions around one event batch."""
+        """Reset input state on round start and hand off event batch to logger"""
         if any(event.kind == "round_started" for event in events):
             self.input_state.reset()
-        log_session_events(self.logger, events)
+        log_session_events(self.logger, events, self.bots)
+
+
+    # Bridge functions between bindings and interaction controller
 
     def action_choose_show(self) -> None:
         self.turn_interaction.choose_show()

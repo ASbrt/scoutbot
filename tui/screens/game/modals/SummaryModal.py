@@ -1,5 +1,3 @@
-"""Small reusable modal for game summaries."""
-
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.screen import ModalScreen
@@ -27,11 +25,11 @@ class SummaryModal(ModalScreen[None]):
         self.query_one("#summary_confirm", Button).can_focus = False
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Close once the user confirms the summary."""
+        """Close on confirm"""
         if event.button.id == "summary_confirm":
             self.dismiss(None)
 
     def on_key(self, event) -> None:
-        """Accept the common "continue" keys for convenience."""
+        """Accept the common "continue" keys for convenience"""
         if event.key.lower() in {"enter", "escape"}:
             self.dismiss(None)

@@ -10,6 +10,7 @@ from bots.bot_the_builder import get_lobby_seat_options
 """Lobby Screen for Game setup"""
 
 # TODO: Dynamically get bot params? Stuff like TOKEN_PENALTY would maybe be interesting. Behavior sliders?
+# TODO: Handle hanging show hands param
 
 @dataclass
 class GameConfig:
@@ -18,7 +19,7 @@ class GameConfig:
     n_players: int
     seat_configs: list[list[str, dict]]
     seed: int
-    show_bot_hands: bool = False # not meaningful right now, setup for later
+    show_bot_hands: bool = False
 
 
 class SetupScreen(Screen):

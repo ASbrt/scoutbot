@@ -1,16 +1,19 @@
-"""Build round-end and game-end summary modal content for GameScreen."""
+"""Builds round-end and game-end summary modal content"""
 
 from typing import Optional
-
 from tools.data_export import ExportBundle
 from tools.Logging import GameResult, RoundResult
-
 from tui.screens.game.modals.SummaryModal import SummaryModal
 
 
 def build_round_summary_modal(round_result: RoundResult, bots: list) -> SummaryModal:
-    """Create the round-end summary modal from a finalized RoundResult."""
-    score_delta_lines = _format_score_delta_lines(round_result.scores_in, round_result.scores_out, bots)
+    score_delta_lines = _format_score_delta(
+        round_result.scores_in,
+        round_result.scores_out,
+        round_result.penalties,
+        bots
+    )
+
     score_lines = _format_score_lines(round_result.scores_out, bots)
     reason = (
         "No one could beat the show."
@@ -38,6 +41,7 @@ def build_game_summary_modal(result: GameResult, bots: list, export_bundle: Opti
         for index, score in enumerate(result.scores_final)
         if score == highest_score
     ]
+
     export_note = ""
     if export_bundle is not None:
         export_note = (
@@ -52,6 +56,7 @@ def build_game_summary_modal(result: GameResult, bots: list, export_bundle: Opti
         f"Winner{'s' if len(winner_labels) > 1 else ''}: {', '.join(winner_labels)}"
         f"{export_note}"
     )
+
     return SummaryModal(
         title="Game Complete",
         body=body,
@@ -59,12 +64,19 @@ def build_game_summary_modal(result: GameResult, bots: list, export_bundle: Opti
     )
 
 
-def _format_score_delta_lines(scores_in: list[int], scores_out: list[int], bots: list) -> str:
-    """Format per-player score deltas for the round-end modal."""
+def _format_score_delta(scores_in: list[int], scores_out: list[int], penalties: list[int], bots: list) -> str:
+    """Formats per-player score deltas and hand penalties."""
     lines = []
-    for index, (before, after) in enumerate(zip(scores_in, scores_out)):
+    # Zip all three lists together
+    for index, (before, after, penalty) in enumerate(zip(scores_in, scores_out, penalties)):
+        label = _player_label(index, bots)
         delta = after - before
-        lines.append(f"{_player_label(index, bots)}: {before} -> {after} ({delta:+d})")
+
+        # Only show the penalty note if they actually lost points
+        penalty_note = f" [Penalty: {penalty}]" if penalty < 0 else ""
+
+        lines.append(f"{label:<8}: {before:>3} -> {after:>3} ({delta:+d}){penalty_note}")
+
     return "\n".join(lines)
 
 
@@ -74,5 +86,14 @@ def _format_score_lines(scores: list[int], bots: list) -> str:
 
 
 def _player_label(index: int, bots: list) -> str:
-    """Return the same seat labels used elsewhere in the gameplay TUI."""
-    return "YOU" if bots[index] is None else f"P{index} (Bot)"
+    """Handles seat labeling."""
+    is_human = bots[index] is None
+
+    if not is_human:
+        return f"P{index} (Bot)"
+
+    human_count = bots.count(None)
+    if human_count > 1:
+        return f"P{index} (Human)"
+
+    return "YOU"
